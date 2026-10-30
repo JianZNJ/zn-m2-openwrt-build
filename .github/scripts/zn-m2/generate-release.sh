@@ -3,19 +3,36 @@ set -euo pipefail
 
 MANIFEST=$(ls "$FIRMWARE"/*.manifest | head -1)
 
-PASSWALL_VER=$(grep luci-app-passwall "$MANIFEST" | awk -F" - " '{print $2}')
-if [ -z "$PASSWALL_VER" ]; then
-  echo "ERROR: could not extract Passwall version from manifest"
-  exit 1
+# 自动识别代理插件：优先 OpenClash，其次 Passwall
+PROXY_NAME=""
+PROXY_VER=""
+
+if grep -q "^luci-app-openclash " "$MANIFEST"; then
+  PROXY_NAME="OpenClash"
+  PROXY_VER=$(grep "^luci-app-openclash " "$MANIFEST" | head -1 | awk -F" - " '{print $2}')
+elif grep -q "^luci-app-passwall " "$MANIFEST"; then
+  PROXY_NAME="Passwall"
+  PROXY_VER=$(grep "^luci-app-passwall " "$MANIFEST" | head -1 | awk -F" - " '{print $2}')
 fi
-echo "Passwall version: $PASSWALL_VER"
-echo "PASSWALL_VER=$PASSWALL_VER" >> "$GITHUB_ENV"
-echo "release_tag=${PASSWALL_VER}" >> "$GITHUB_OUTPUT"
+
+if [ -z "$PROXY_VER" ]; then
+  PROXY_NAME="none"
+  PROXY_VER="unknown"
+  echo "WARNING: no proxy app found in manifest, continuing anyway"
+fi
+
+echo "$PROXY_NAME version: $PROXY_VER"
+echo "PROXY_VER=$PROXY_VER" >> "$GITHUB_ENV"
+
+TAG="${PROXY_NAME}-${PROXY_VER}-$(date +%Y%m%d%H)"
+echo "release_tag=${TAG}" >> "$GITHUB_OUTPUT"
 
 touch release.txt
 echo "## ZN-M2 固件" >> release.txt
 echo "" >> release.txt
-echo "**Passwall 版本:** \`$PASSWALL_VER\`" >> release.txt
+echo "**默认管理地址:** \`192.168.2.1\`  **默认密码:** \`password\`" >> release.txt
+echo "" >> release.txt
+echo "**代理插件:** $PROXY_NAME \`$PROXY_VER\`" >> release.txt
 echo "" >> release.txt
 grep xray-core   "$MANIFEST" | awk -F" - " '{print $2}' | awk -F"-" '{print "**Xray:** `"$1"`"}'        >> release.txt || true
 grep sing-box    "$MANIFEST" | awk -F" - " '{print $2}' | awk -F"-" '{print "**Sing-Box:** `"$1"`"}'    >> release.txt || true
@@ -28,4 +45,4 @@ echo "- **gecoosac-v2**: 含集客AC控制器 V2" >> release.txt
 echo "" >> release.txt
 echo "详细包信息请查看 manifest 文件" >> release.txt
 
-echo "release_name=ZN-M2 Passwall ${PASSWALL_VER}" >> "$GITHUB_OUTPUT"
+echo "release_name=ZN-M2 ${PROXY_NAME} ${PROXY_VER}" >> "$GITHUB_OUTPUT"
