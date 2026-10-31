@@ -24,13 +24,14 @@ fi
 echo "$PROXY_NAME version: $PROXY_VER"
 echo "PROXY_VER=$PROXY_VER" >> "$GITHUB_ENV"
 
-TAG="${PROXY_NAME}-${PROXY_VER}-$(date +%Y%m%d%H)"
+TAG="${PROXY_NAME}-${PROXY_VER}-r${GITHUB_RUN_NUMBER:-0}"
 echo "release_tag=${TAG}" >> "$GITHUB_OUTPUT"
 
 touch release.txt
 echo "## ZN-M2 固件" >> release.txt
 echo "" >> release.txt
-echo "**默认管理地址:** \`192.168.2.1\`  **默认密码:** \`password\`" >> release.txt
+echo "**默认管理地址:** \`192.168.2.1\`  **默认密码:** \`Za831021.\`" >> release.txt
+echo "**构建号:** \`${GITHUB_RUN_NUMBER:-0}\`" >> release.txt
 echo "" >> release.txt
 echo "**代理插件:** $PROXY_NAME \`$PROXY_VER\`" >> release.txt
 echo "" >> release.txt

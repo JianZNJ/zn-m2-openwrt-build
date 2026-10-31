@@ -90,6 +90,30 @@ else
 fi
 rm -rf "$CORE_TMP"
 
-echo "==> 9. Custom overlay files"
+echo "==> 9. Build number + OTA tool + weekly check"
+mkdir -p files/etc files/usr/sbin files/etc/crontabs
+echo "${GITHUB_RUN_NUMBER:-0}" > files/etc/fw-version
+echo "    build number: $(cat files/etc/fw-version)"
+install -m 0755 "$GITHUB_WORKSPACE/scripts/zn-m2/fw-ota.sh" files/usr/sbin/fw-ota
+cat > files/etc/crontabs/root <<'EOF'
+# 每周六 04:00 检查固件更新（只检查，不自动刷）
+0 4 * * 6 /usr/sbin/fw-ota check >> /var/log/fw-ota.log 2>&1
+EOF
+chmod 600 files/etc/crontabs/root
+
+echo "==> 10. Enable adblock / banip / oaf on first boot"
+cat > files/etc/uci-defaults/96-services <<'EOF'
+#!/bin/sh
+for s in adblock banip appfilter oaf; do
+    if [ -x "/etc/init.d/$s" ]; then
+        "/etc/init.d/$s" enable >/dev/null 2>&1
+        "/etc/init.d/$s" restart >/dev/null 2>&1
+    fi
+done
+exit 0
+EOF
+chmod +x files/etc/uci-defaults/96-services
+
+echo "==> 11. Custom overlay files"
 find files -type f | sed 's/^/    /'
 echo "==> diy-part3 done"
