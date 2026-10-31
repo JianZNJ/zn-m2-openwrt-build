@@ -9,6 +9,13 @@
 echo "==> Clone OpenAppFilter (kmod-oaf + appfilter + luci-app-oaf)"
 rm -rf package/OpenAppFilter
 git clone --depth 1 https://github.com/destan19/OpenAppFilter.git package/OpenAppFilter
+
+# 4.4 内核没有 fallthrough 宏（Linux 5.x 才引入），补一个空定义
+if [ -f package/OpenAppFilter/oaf/Makefile ]; then
+  sed -i 's/^KCFLAGS := /KCFLAGS := -Dfallthrough= /' package/OpenAppFilter/oaf/Makefile
+  echo "    patched KCFLAGS:"
+  grep -n 'KCFLAGS :=' package/OpenAppFilter/oaf/Makefile | head -2
+fi
 echo "    contents:"
 ls -1 package/OpenAppFilter
 
